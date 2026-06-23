@@ -1,6 +1,8 @@
 package com.unimobili.agenda.schedule;
 
 import com.unimobili.agenda.schedule.dto.ScheduleResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,6 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/schedules")
+@Tag(name = "Agendas", description = "Visão das agendas dos funcionários externos")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
@@ -24,6 +27,8 @@ public class ScheduleController {
     }
 
     @GetMapping
+    @Operation(summary = "Listar agendas",
+            description = "Agendas dos externos com seus eventos (filtro de período). EXTERNO vê só a própria.")
     public Page<ScheduleResponse> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant de,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant ate,
@@ -32,6 +37,8 @@ public class ScheduleController {
     }
 
     @GetMapping("/{externalUserId}")
+    @Operation(summary = "Agenda de um externo",
+            description = "Eventos do funcionário externo no período. EXTERNO só acessa a própria.")
     public ScheduleResponse get(
             @PathVariable UUID externalUserId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant de,

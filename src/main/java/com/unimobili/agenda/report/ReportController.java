@@ -5,6 +5,8 @@ import com.unimobili.agenda.event.dto.EventResponse;
 import com.unimobili.agenda.report.dto.CancellationReport;
 import com.unimobili.agenda.report.dto.EventsByUserReport;
 import com.unimobili.agenda.report.dto.OccupancyReport;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,6 +21,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/reports")
+@Tag(name = "Relatórios", description = "Relatórios gerenciais (somente GERENTE)")
 public class ReportController {
 
     private final ReportService reportService;
@@ -28,6 +31,7 @@ public class ReportController {
     }
 
     @GetMapping("/events")
+    @Operation(summary = "Relatório de eventos", description = "Lista de eventos filtrada por período, externo, criador e status.")
     public Page<EventResponse> events(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant de,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant ate,
@@ -39,6 +43,7 @@ public class ReportController {
     }
 
     @GetMapping("/events-by-user")
+    @Operation(summary = "Eventos por externo", description = "Contagem de eventos agrupada por funcionário externo.")
     public List<EventsByUserReport> eventsByUser(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant de,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant ate,
@@ -48,6 +53,7 @@ public class ReportController {
     }
 
     @GetMapping("/cancellations")
+    @Operation(summary = "Cancelamentos", description = "Totais de CANCELADO e NAO_COMPARECEU e a taxa de cancelamento.")
     public CancellationReport cancellations(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant de,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant ate,
@@ -56,6 +62,7 @@ public class ReportController {
     }
 
     @GetMapping("/occupancy")
+    @Operation(summary = "Ocupação", description = "Horas ocupadas por funcionário externo no período (exclui cancelados).")
     public List<OccupancyReport> occupancy(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant de,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant ate) {
