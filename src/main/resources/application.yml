@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: agenda-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/agenda}
+    username: ${SPRING_DATASOURCE_USERNAME:agenda}
+    password: ${SPRING_DATASOURCE_PASSWORD:agenda}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:troque-este-segredo-em-producao-min-32-bytes-hs256-unimobili}
+    access-ttl: PT15M
+    refresh-ttl: P7D
+  seed:
+    gerente:
+      email: ${GERENTE_EMAIL:gerente@unimobili.com}
+      password: ${GERENTE_PASSWORD:admin12345}
