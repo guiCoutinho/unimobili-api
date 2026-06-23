@@ -3,7 +3,7 @@ package com.unimobili.agenda.event;
 import com.unimobili.agenda.event.dto.CreateEventRequest;
 import com.unimobili.agenda.event.dto.EventResponse;
 import com.unimobili.agenda.event.dto.UpdateEventRequest;
-import com.unimobili.agenda.security.CurrentUserProvider;
+import com.unimobili.agenda.security.CurrentActor;
 import com.unimobili.agenda.user.Role;
 import com.unimobili.agenda.user.User;
 import com.unimobili.agenda.user.UserRepository;
@@ -12,7 +12,6 @@ import com.unimobili.agenda.web.error.ConflictException;
 import com.unimobili.agenda.web.error.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,18 +31,18 @@ public class EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final EventMapper eventMapper;
-    private final CurrentUserProvider currentUser;
+    private final CurrentActor currentActor;
     private final Clock clock;
 
     public EventService(EventRepository eventRepository,
                         UserRepository userRepository,
                         EventMapper eventMapper,
-                        CurrentUserProvider currentUser,
+                        CurrentActor currentActor,
                         Clock clock) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.eventMapper = eventMapper;
-        this.currentUser = currentUser;
+        this.currentActor = currentActor;
         this.clock = clock;
     }
 
@@ -121,21 +120,16 @@ public class EventService {
     public Page<EventResponse> list(Instant de, Instant ate, UUID externalUserId,
                                     UUID createdBy, EventStatus status, Pageable pageable) {
         // EXTERNO só enxerga a própria agenda.
-        if (currentUser.currentRole() == Role.EXTERNO) {
-            externalUserId = currentUser.currentUserId();
-        }
+        UUID effectiveExternalUserId = currentActor.current().effectiveExternalFilter(externalUserId);
         return eventRepository
-                .findAll(EventSpecifications.filter(de, ate, externalUserId, createdBy, status), pageable)
+                .findAll(EventSpecifications.filter(de, ate, effectiveExternalUserId, createdBy, status), pageable)
                 .map(eventMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     public EventResponse getById(UUID id) {
         Event event = findOrThrow(id);
-        if (currentUser.currentRole() == Role.EXTERNO
-                && !currentUser.currentUserId().equals(event.getExternalUser().getId())) {
-            throw new AccessDeniedException("Você só pode visualizar eventos da sua agenda");
-        }
+        currentActor.current().assertCanViewAgendaOf(event.getExternalUser().getId());
         return eventMapper.toResponse(event);
     }
 
@@ -160,12 +154,9 @@ public class EventService {
         return externalUser;
     }
 
-    /** INTERNO só altera eventos que criou; GERENTE altera qualquer um. */
+    /** Delega ao Actor: INTERNO só altera eventos que criou; GERENTE altera qualquer um. */
     private void assertCanModify(Event event) {
-        if (currentUser.currentRole() == Role.INTERNO
-                && !currentUser.currentUserId().equals(event.getCreatedBy())) {
-            throw new AccessDeniedException("Você só pode alterar eventos criados por você");
-        }
+        currentActor.current().assertCanModify(event.getCreatedBy());
     }
 
     private Event findOrThrow(UUID id) {

@@ -10,23 +10,18 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 /**
- * Acesso ao usuário autenticado (id e papel) a partir do JWT no contexto de segurança.
+ * Adapter fino que constrói o {@link Actor} a partir do JWT no contexto de segurança.
+ * É o único ponto que conhece o SecurityContext; a política em si vive no Actor.
  */
 @Component
-public class CurrentUserProvider {
+public class CurrentActor {
 
-    public UUID currentUserId() {
-        return UUID.fromString(jwt().getClaimAsString(JwtService.CLAIM_UID));
-    }
-
-    public Role currentRole() {
-        return Role.valueOf(jwt().getClaimAsString(JwtService.CLAIM_ROLE));
-    }
-
-    private Jwt jwt() {
+    public Actor current() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt;
+            return new Actor(
+                    UUID.fromString(jwt.getClaimAsString(JwtService.CLAIM_UID)),
+                    Role.valueOf(jwt.getClaimAsString(JwtService.CLAIM_ROLE)));
         }
         throw new AccessDeniedException("Usuário não autenticado");
     }
