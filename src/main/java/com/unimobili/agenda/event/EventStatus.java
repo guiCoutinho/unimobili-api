@@ -12,6 +12,11 @@ public enum EventStatus {
         return this == REALIZADO || this == CANCELADO || this == NAO_COMPARECEU;
     }
 
+    /** Ocupa a agenda (não foi cancelado nem marcado como não comparecimento). */
+    public boolean occupiesSlot() {
+        return this != CANCELADO && this != NAO_COMPARECEU;
+    }
+
     public boolean canTransitionTo(EventStatus target) {
         return switch (this) {
             case AGENDADO -> target == CONFIRMADO || target == CANCELADO;

@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers("/users/**").hasRole("GERENTE")
+                        .requestMatchers("/reports/**").hasRole("GERENTE")
                         .requestMatchers(HttpMethod.POST, "/events").hasAnyRole("INTERNO", "GERENTE")
                         .requestMatchers(HttpMethod.PUT, "/events/**").hasAnyRole("INTERNO", "GERENTE")
                         .requestMatchers(HttpMethod.PATCH, "/events/**").hasAnyRole("INTERNO", "GERENTE")
