@@ -17,31 +17,28 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.EnumSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class EventService {
 
-    /** Status que ocupam a agenda (CANCELADO e NAO_COMPARECEU liberam o horário). */
-    static final Set<EventStatus> OCCUPYING =
-            EnumSet.of(EventStatus.AGENDADO, EventStatus.CONFIRMADO, EventStatus.REALIZADO);
-
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final EventMapper eventMapper;
+    private final AgendaConflictChecker conflictChecker;
     private final CurrentActor currentActor;
     private final Clock clock;
 
     public EventService(EventRepository eventRepository,
                         UserRepository userRepository,
                         EventMapper eventMapper,
+                        AgendaConflictChecker conflictChecker,
                         CurrentActor currentActor,
                         Clock clock) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.eventMapper = eventMapper;
+        this.conflictChecker = conflictChecker;
         this.currentActor = currentActor;
         this.clock = clock;
     }
@@ -50,11 +47,8 @@ public class EventService {
     public EventResponse create(CreateEventRequest request) {
         validatePeriod(request.dataHoraInicio(), request.dataHoraFim());
         User externalUser = loadExternalUser(request.externalUserId());
-
-        if (eventRepository.existsConflict(externalUser.getId(), OCCUPYING,
-                request.dataHoraInicio(), request.dataHoraFim())) {
-            throw new ConflictException("Conflito de horário na agenda do funcionário externo");
-        }
+        conflictChecker.assertNoConflict(externalUser.getId(),
+                request.dataHoraInicio(), request.dataHoraFim(), null);
 
         Event event = new Event();
         event.setTitulo(request.titulo());
@@ -77,11 +71,8 @@ public class EventService {
 
         validatePeriod(request.dataHoraInicio(), request.dataHoraFim());
         User externalUser = loadExternalUser(request.externalUserId());
-
-        if (eventRepository.existsConflictExcluding(id, externalUser.getId(), OCCUPYING,
-                request.dataHoraInicio(), request.dataHoraFim())) {
-            throw new ConflictException("Conflito de horário na agenda do funcionário externo");
-        }
+        conflictChecker.assertNoConflict(externalUser.getId(),
+                request.dataHoraInicio(), request.dataHoraFim(), id);
 
         event.setTitulo(request.titulo());
         event.setDescricao(request.descricao());
