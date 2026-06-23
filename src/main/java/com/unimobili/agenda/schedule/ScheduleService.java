@@ -5,7 +5,7 @@ import com.unimobili.agenda.event.EventRepository;
 import com.unimobili.agenda.event.EventSpecifications;
 import com.unimobili.agenda.event.dto.EventResponse;
 import com.unimobili.agenda.schedule.dto.ScheduleResponse;
-import com.unimobili.agenda.security.CurrentUserProvider;
+import com.unimobili.agenda.security.CurrentActor;
 import com.unimobili.agenda.user.Role;
 import com.unimobili.agenda.user.User;
 import com.unimobili.agenda.user.UserRepository;
@@ -14,7 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,22 +27,24 @@ public class ScheduleService {
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
-    private final CurrentUserProvider currentUser;
+    private final CurrentActor currentActor;
 
     public ScheduleService(UserRepository userRepository,
                            EventRepository eventRepository,
                            EventMapper eventMapper,
-                           CurrentUserProvider currentUser) {
+                           CurrentActor currentActor) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.eventMapper = eventMapper;
-        this.currentUser = currentUser;
+        this.currentActor = currentActor;
     }
 
     @Transactional(readOnly = true)
     public Page<ScheduleResponse> listSchedules(Instant de, Instant ate, Pageable pageable) {
-        if (currentUser.currentRole() == Role.EXTERNO) {
-            User self = userRepository.findById(currentUser.currentUserId())
+        // EXTERNO vê apenas a própria agenda; demais papéis veem todas.
+        UUID ownAgendaOnly = currentActor.current().effectiveExternalFilter(null);
+        if (ownAgendaOnly != null) {
+            User self = userRepository.findById(ownAgendaOnly)
                     .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
             return new PageImpl<>(List.of(toSchedule(self, de, ate)), pageable, 1);
         }
@@ -53,10 +54,7 @@ public class ScheduleService {
 
     @Transactional(readOnly = true)
     public ScheduleResponse getSchedule(UUID externalUserId, Instant de, Instant ate) {
-        if (currentUser.currentRole() == Role.EXTERNO
-                && !currentUser.currentUserId().equals(externalUserId)) {
-            throw new AccessDeniedException("Você só pode acessar a própria agenda");
-        }
+        currentActor.current().assertCanViewAgendaOf(externalUserId);
 
         User external = userRepository.findById(externalUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Agenda não encontrada: " + externalUserId));
