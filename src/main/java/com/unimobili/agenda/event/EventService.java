@@ -120,6 +120,10 @@ public class EventService {
     @Transactional(readOnly = true)
     public Page<EventResponse> list(Instant de, Instant ate, UUID externalUserId,
                                     UUID createdBy, EventStatus status, Pageable pageable) {
+        // EXTERNO só enxerga a própria agenda.
+        if (currentUser.currentRole() == Role.EXTERNO) {
+            externalUserId = currentUser.currentUserId();
+        }
         return eventRepository
                 .findAll(EventSpecifications.filter(de, ate, externalUserId, createdBy, status), pageable)
                 .map(eventMapper::toResponse);
@@ -127,7 +131,12 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public EventResponse getById(UUID id) {
-        return eventMapper.toResponse(findOrThrow(id));
+        Event event = findOrThrow(id);
+        if (currentUser.currentRole() == Role.EXTERNO
+                && !currentUser.currentUserId().equals(event.getExternalUser().getId())) {
+            throw new AccessDeniedException("Você só pode visualizar eventos da sua agenda");
+        }
+        return eventMapper.toResponse(event);
     }
 
     // ---- regras compartilhadas ----
