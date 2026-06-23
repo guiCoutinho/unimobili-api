@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: agenda-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/agenda}
+    username: ${SPRING_DATASOURCE_USERNAME:agenda}
+    password: ${SPRING_DATASOURCE_PASSWORD:agenda}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
