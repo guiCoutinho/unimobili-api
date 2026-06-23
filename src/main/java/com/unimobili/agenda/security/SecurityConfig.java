@@ -47,6 +47,9 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers("/users/**").hasRole("GERENTE")
                         .requestMatchers(HttpMethod.POST, "/events").hasAnyRole("INTERNO", "GERENTE")
+                        .requestMatchers(HttpMethod.PUT, "/events/**").hasAnyRole("INTERNO", "GERENTE")
+                        .requestMatchers(HttpMethod.PATCH, "/events/**").hasAnyRole("INTERNO", "GERENTE")
+                        .requestMatchers(HttpMethod.DELETE, "/events/**").hasAnyRole("INTERNO", "GERENTE")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(authenticationEntryPoint)
