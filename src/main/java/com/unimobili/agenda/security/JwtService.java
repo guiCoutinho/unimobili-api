@@ -17,6 +17,7 @@ import java.time.Instant;
 public class JwtService {
 
     public static final String CLAIM_ROLE = "role";
+    public static final String CLAIM_UID = "uid";
     public static final String CLAIM_TYPE = "type";
     public static final String TYPE_ACCESS = "access";
     public static final String TYPE_REFRESH = "refresh";
@@ -55,6 +56,7 @@ public class JwtService {
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
                 .claim(CLAIM_ROLE, user.getRole().name())
+                .claim(CLAIM_UID, user.getId().toString())
                 .claim(CLAIM_TYPE, type)
                 .build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
